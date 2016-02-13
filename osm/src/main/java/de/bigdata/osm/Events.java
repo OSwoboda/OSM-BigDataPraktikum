@@ -1,51 +1,42 @@
 package de.bigdata.osm;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.ArrayList;
+import java.util.List;
 
-@XmlRootElement
 public class Events {
 
-	private double top;
-	private double right;
-	private double bottom;
-	private double left;
+	private Bounds bounds;
 	
+	private List<Event> events = new ArrayList<Event>();
+	private List<Integer> eventIDs = new ArrayList<Integer>();
+
 	public Events() {
 	}
 	
-	public Events(double top, double right, double bottom, double left) {
-		this.top = top;
-		this.right = right;
-		this.bottom = bottom;
-		this.left = left;
+	public Bounds getBounds() {
+		return bounds;
+	}
+
+	public void setBounds(Bounds bounds) {
+		this.bounds = bounds;
+	}
+
+	public List<Event> getEvents() {
+		return events;
+	}
+	public void setEvents(List<Event> events) {
+		this.events = events;
 	}
 	
-	public double getTop() {
-		return top;
-	}
-	public void setTop(double top) {
-		this.top = top;
+	public void addEvent(Event event) {
+		events.add(event);
 	}
 	
-	public double getRight() {
-		return right;
-	}
-	public void setRight(double right) {
-		this.right = right;
-	}
 	
-	public double getBottom() {
-		return bottom;
+	public List<Integer> getEventIDs() {
+		return eventIDs;
 	}
-	public void setBottom(double bottom) {
-		this.bottom = bottom;
+	public void setEventIDs(List<Integer> eventIDs) {
+		this.eventIDs = eventIDs;
 	}
-	
-	public double getLeft() {
-		return left;
-	}
-	public void setLeft(double left) {
-		this.left = left;
-	}
-	
 }
