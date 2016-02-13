@@ -6,6 +6,7 @@ var box;
 var transform;
 var map;
 var filter = {};
+var size = 1;
 
 function endDrag(bbox) {
 	vectors.removeAllFeatures();
@@ -44,7 +45,7 @@ function communicate() {
 				var circle = OpenLayers.Geometry.Polygon.createRegularPolygon
 				(
 						new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat),
-						v.count*1000,
+						v.count*1000*size,
 						40,
 						0
 				);
@@ -97,12 +98,22 @@ function init() {
 	map.addControl(transform);
 	box.activate();
 	
-	OpenLayers.Util.getElement("legend").innerHTML = "<form><label for='events'>Events: <input id='events' name='events'></label> <input id='filter' type='submit' value='Filter'></form>";
+	OpenLayers.Util.getElement("legend").innerHTML = "<form><label for='events'>Events: <input id='events' name='events'></label> <input id='filter' type='submit' value='Filter'></form><br/>" +
+			"<form><label for='circleSize'>circleSize: <input class='circleSize' name='circleSize' type='submit' value='-'> <input class='circleSize' name='circleSize' type='submit' value='+'></label></form>";
 	$('#filter').click(function(e) {
 		e.preventDefault();
 		var eventIDs = $('#events').val().split(/[, ]+/);
 		filter.eventIDs = (eventIDs[0] == "" ? [] : eventIDs);
 		communicate();
+	});
+	$('input.circleSize').click(function(e) {
+		e.preventDefault();
+		var scale = e.toElement.value == "+" ? 2 : 0.5;
+		size *= scale;
+		circleLayer.features.forEach(function(feature) {
+			feature.geometry.resize(scale, feature.geometry.getCentroid());
+		});
+		circleLayer.redraw()
 	});
 	map.setCenter(lonlat, zoom);
 }
