@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureStore;
@@ -30,6 +30,7 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 
 @Path("/jersey")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Jersey {
 	
 	private Events events;
@@ -49,12 +50,6 @@ public class Jersey {
 
         // get the feature store used to query the GeoMesa data
         featureStore = (AccumuloFeatureStore) dataStore.getFeatureSource(simpleFeatureTypeName);
-	}
-	
-	@GET 
-	@Produces("text/plain")
-	public String getClichedMessage() {
-		return "Hello World";
 	}
   
 	@POST
@@ -135,7 +130,6 @@ public class Jersey {
                            ff.literal(end));
         filterList.add(timeFilter);
         
-        // We'll bound our query spatially to Ukraine
         Filter spatialFilter =
                 ff.bbox(GdeltFeature.Attributes.geom.getName(),
                         events.getBounds().getLeft(),
@@ -152,6 +146,18 @@ public class Jersey {
         if (!eventsFilter.isEmpty()) {
         	Filter orEvents = ff.or(eventsFilter);
         	filterList.add(orEvents);
+        }
+        
+        List<Filter> keywordsFilter = new ArrayList<Filter>();
+        for (String keyword : events.getKeywords()) {
+        	List<Filter> columnFilter = new ArrayList<Filter>();
+        	columnFilter.add(ff.like(ff.property(GdeltFeature.Attributes.Actor1Name.getName()), "%"+keyword+"%"));
+        	columnFilter.add(ff.like(ff.property(GdeltFeature.Attributes.Actor2Name.getName()), "%"+keyword+"%"));
+        	keywordsFilter.add(ff.or(columnFilter));
+        }
+        if (!keywordsFilter.isEmpty()) {
+        	Filter orKeywords = ff.or(keywordsFilter);
+        	filterList.add(orKeywords);
         }
         
         // Now we can combine our filters using a boolean AND operator

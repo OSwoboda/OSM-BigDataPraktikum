@@ -17,7 +17,15 @@
 			    background-color:rgba(255,255,255,0.5);
 			    padding:1em;
 			}
+			label.field {
+				float: left;
+				width: 5em;
+			}
+			form p {
+				clear: both;
+			}
 			input.circleSize { width:2em; }
+			.center { text-align:center; }
 		</style>
 		
   		<script src='http://code.jquery.com/jquery-1.11.3.js'></script>
@@ -27,7 +35,9 @@
 	</head>
 	<body onload="init();">
 		<div id="map">
-			<div id="legend"></div>
+			<div id="legend">
+				<p>Use Ctrl+LeftClick on the map to choose an area of interest.</p>
+			</div>
 		</div>
 	</body>
 </html>

@@ -1,12 +1,14 @@
 package de.bigdata.osm;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Bounds {
 	
 	private double top;
 	private double right;
 	private double bottom;
 	private double left;
-	private double centerLonLat;
 	
 	public Bounds() {
 	}
@@ -37,12 +39,5 @@ public class Bounds {
 	}
 	public void setLeft(double left) {
 		this.left = left;
-	}
-
-	public double getCenterLonLat() {
-		return centerLonLat;
-	}
-	public void setCenterLonLat(double centerLonLat) {
-		this.centerLonLat = centerLonLat;
 	}
 }

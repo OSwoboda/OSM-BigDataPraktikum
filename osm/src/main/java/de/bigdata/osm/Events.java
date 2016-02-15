@@ -3,12 +3,16 @@ package de.bigdata.osm;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Events {
 
 	private Bounds bounds;
 	
 	private List<Event> events = new ArrayList<Event>();
 	private List<Integer> eventIDs = new ArrayList<Integer>();
+	private List<String> keywords = new ArrayList<String>();
 
 	public Events() {
 	}
@@ -38,5 +42,12 @@ public class Events {
 	}
 	public void setEventIDs(List<Integer> eventIDs) {
 		this.eventIDs = eventIDs;
+	}
+
+	public List<String> getKeywords() {
+		return keywords;
+	}
+	public void setKeywords(List<String> keywords) {
+		this.keywords = keywords;
 	}
 }

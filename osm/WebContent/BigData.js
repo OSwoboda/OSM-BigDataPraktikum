@@ -8,7 +8,7 @@ var map;
 var filter = {};
 var size = 1;
 
-function endDrag(bbox) {
+function endDrag(bbox) {	
 	vectors.removeAllFeatures();
 	transform.unsetFeature();
 	filter.bounds = bbox.getBounds();
@@ -17,6 +17,36 @@ function endDrag(bbox) {
 	vectors.addFeatures(feature);
 	transform.setFeature(feature);
 	communicate();
+	
+	var legend = OpenLayers.Util.getElement("legend");
+	if (legend.innerHTML.indexOf("Ctrl+LeftClick") > -1) {
+		legend.innerHTML =
+			"<p class='center' id='results'>Searching...</p>" +
+			"<form>" +
+				"<p><label class='field' for='events'>Events:</label> <input id='events' name='events'></p>" +
+				"<p><label class='field' for='keywords'>Keywords:</label> <input id='keywords' name='keywords'> <input id='filter' type='submit' value='Filter'></p>" +
+			"</form>" +
+			"<form>" +
+				"<p><label class='field' for='circleSize'>circleSize:</label> <input class='circleSize' name='circleSize' type='submit' value='-'> <input class='circleSize' name='circleSize' type='submit' value='+'></p>" +
+			"</form>";
+		$('#filter').click(function(e) {
+			e.preventDefault();
+			var eventIDs = $('#events').val().split(/[, ]+/);
+			filter.eventIDs = (eventIDs[0] == "" ? [] : eventIDs);
+			var keywords = $('#keywords').val().split(/[, ]+/);
+			filter.keywords = (keywords[0] == "" ? [] : keywords);
+			communicate();
+		});
+		$('input.circleSize').click(function(e) {
+			e.preventDefault();
+			var scale = e.toElement.value == "+" ? 2 : 0.5;
+			size *= scale;
+			circleLayer.features.forEach(function(feature) {
+				feature.geometry.resize(scale, feature.geometry.getCentroid());
+			});
+			circleLayer.redraw()
+		});
+	}
 }
 
 function communicate() {
@@ -27,6 +57,7 @@ function communicate() {
 		data: JSON.stringify(filter),
 		dataType: "json",
 		success: function(data) {
+			OpenLayers.Util.getElement("results").innerHTML = data.events.length > 0 ? data.events.length+" results" : "No results";
 			var points = {};
 			data.events.forEach(function(event) {
 				var key = event.lat+"&"+event.lon;
@@ -96,24 +127,7 @@ function init() {
 		communicate();
 	});
 	map.addControl(transform);
-	box.activate();
+	box.activate();	
 	
-	OpenLayers.Util.getElement("legend").innerHTML = "<form><label for='events'>Events: <input id='events' name='events'></label> <input id='filter' type='submit' value='Filter'></form><br/>" +
-			"<form><label for='circleSize'>circleSize: <input class='circleSize' name='circleSize' type='submit' value='-'> <input class='circleSize' name='circleSize' type='submit' value='+'></label></form>";
-	$('#filter').click(function(e) {
-		e.preventDefault();
-		var eventIDs = $('#events').val().split(/[, ]+/);
-		filter.eventIDs = (eventIDs[0] == "" ? [] : eventIDs);
-		communicate();
-	});
-	$('input.circleSize').click(function(e) {
-		e.preventDefault();
-		var scale = e.toElement.value == "+" ? 2 : 0.5;
-		size *= scale;
-		circleLayer.features.forEach(function(feature) {
-			feature.geometry.resize(scale, feature.geometry.getCentroid());
-		});
-		circleLayer.redraw()
-	});
 	map.setCenter(lonlat, zoom);
 }
