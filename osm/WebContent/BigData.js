@@ -1,11 +1,23 @@
 var rootURL = 'http://localhost:8080/osm/rest/jersey';
 
 var vectors;
-var circleLayer = new OpenLayers.Layer.Vector("Circles");
+var circleLayer = new OpenLayers.Layer.Vector("Circles", {
+	styleMap: new OpenLayers.StyleMap({
+		'default': OpenLayers.Util.extend({graphicZIndex:'${results}'-'${count}'}, OpenLayers.Feature.Vector.style['default'])
+	}),
+	rendererOptions: {zIndexing: true}
+});
 var box;
 var transform;
 var map;
-var filter = {};
+var filter = {
+		dateFrom: {month: 02, day: 02, year: 2013},
+		dateTo: {month: 02, day: 02, year: 2014},
+		hours: {
+			from: 0,
+			to: 24
+		}
+};
 var size = 1;
 
 function endDrag(bbox) {	
@@ -17,39 +29,10 @@ function endDrag(bbox) {
 	vectors.addFeatures(feature);
 	transform.setFeature(feature);
 	communicate();
-	
-	var legend = OpenLayers.Util.getElement("legend");
-	if (legend.innerHTML.indexOf("Ctrl+LeftClick") > -1) {
-		legend.innerHTML =
-			"<p class='center' id='results'>Searching...</p>" +
-			"<form>" +
-				"<p><label class='field' for='events'>Events:</label> <input id='events' name='events'></p>" +
-				"<p><label class='field' for='keywords'>Keywords:</label> <input id='keywords' name='keywords'> <input id='filter' type='submit' value='Filter'></p>" +
-			"</form>" +
-			"<form>" +
-				"<p><label class='field' for='circleSize'>circleSize:</label> <input class='circleSize' name='circleSize' type='submit' value='-'> <input class='circleSize' name='circleSize' type='submit' value='+'></p>" +
-			"</form>";
-		$('#filter').click(function(e) {
-			e.preventDefault();
-			var eventIDs = $('#events').val().split(/[, ]+/);
-			filter.eventIDs = (eventIDs[0] == "" ? [] : eventIDs);
-			var keywords = $('#keywords').val().split(/[, ]+/);
-			filter.keywords = (keywords[0] == "" ? [] : keywords);
-			communicate();
-		});
-		$('input.circleSize').click(function(e) {
-			e.preventDefault();
-			var scale = e.toElement.value == "+" ? 2 : 0.5;
-			size *= scale;
-			circleLayer.features.forEach(function(feature) {
-				feature.geometry.resize(scale, feature.geometry.getCentroid());
-			});
-			circleLayer.redraw()
-		});
-	}
 }
 
 function communicate() {
+	OpenLayers.Util.getElement("results").innerHTML = "Searching...";
 	$.ajax({
 		method: "POST",
 		url: rootURL,
@@ -57,14 +40,16 @@ function communicate() {
 		data: JSON.stringify(filter),
 		dataType: "json",
 		success: function(data) {
+			console.log(data);
 			OpenLayers.Util.getElement("results").innerHTML = data.events.length > 0 ? data.events.length+" results" : "No results";
 			var points = {};
 			data.events.forEach(function(event) {
 				var key = event.lat+"&"+event.lon;
 				if (points.hasOwnProperty(key)) {
 					points[key].count += 1;
+					points[key].events.push(event);
 				} else {
-					points[key] = {count:1, lat:event.lat, lon:event.lon};
+					points[key] = {count:1, lat:event.lat, lon:event.lon, events:[event]};
 				}
 			});
 			circleLayer.removeAllFeatures();
@@ -81,7 +66,7 @@ function communicate() {
 						0
 				);
 
-				var featurecircle = new OpenLayers.Feature.Vector(circle);
+				var featurecircle = new OpenLayers.Feature.Vector(circle, {events:v.events, count:v.count, results:data.events.length});
 				circleLayer.addFeatures(featurecircle);
 			});
 			circleLayer.redraw();
@@ -116,6 +101,7 @@ function init() {
 	});
 	box.handler.callbacks.done = endDrag;
 	map.addControl(box);
+	box.activate();	
 
 	transform = new OpenLayers.Control.TransformFeature(vectors, {
 		rotate: false,
@@ -127,7 +113,81 @@ function init() {
 		communicate();
 	});
 	map.addControl(transform);
-	box.activate();	
+	var select = new OpenLayers.Control.SelectFeature([vectors, circleLayer]);
+	select.events.register("featurehighlighted", select, function(event) {
+		console.log(event);
+		console.log(event.feature.attributes);
+	});
+	map.addControl(select);
+	select.activate();
+	
+	$('#filter').click(function(e) {
+		e.preventDefault();
+		var eventIDs = $('#events').val().split(/[, ]+/);
+		filter.eventIDs = (eventIDs[0] == "" ? [] : eventIDs);
+		var keywords = $('#keywords').val().split(/[, ]+/);
+		filter.keywords = (keywords[0] == "" ? [] : keywords);
+		if (vectors.features.length > 0) {
+			communicate();
+		}
+	});
+	$('input.circleSize').click(function(e) {
+		e.preventDefault();
+		var scale = e.toElement.value == "+" ? 2 : 0.5;
+		size *= scale;
+		circleLayer.features.forEach(function(feature) {
+			feature.geometry.resize(scale, feature.geometry.getCentroid());
+		});
+		circleLayer.redraw()
+	});
+	$("#dateFrom").datepicker({
+	    defaultDate: filter.dateFrom.month+"/"+filter.dateFrom.day+"/"+filter.dateFrom.year,
+	    maxDate: filter.dateTo.month+"/"+filter.dateTo.day+"/"+filter.dateTo.year,
+	    changeMonth: true,
+	    changeYear: true,
+	    showWeek: true,
+		showOtherMonths: true,
+	    selectOtherMonths: true,
+	    onClose: function(selectedDate) {
+	    	$("#dateTo").datepicker("option", "minDate", selectedDate);
+	    	var date = selectedDate.split("/");
+			date = { month: date[0], day: date[1], year: date[2]};
+			filter.dateFrom = date;
+			communicate();
+	    }
+	});
+	$("#dateTo").datepicker({
+		defaultDate: filter.dateTo.month+"/"+filter.dateTo.day+"/"+filter.dateTo.year,
+	    minDate: filter.dateFrom.month+"/"+filter.dateFrom.day+"/"+filter.dateFrom.year,
+		changeMonth: true,
+		changeYear: true,
+		showWeek: true,
+		showOtherMonths: true,
+	    selectOtherMonths: true,
+		onClose: function(selectedDate) {
+			$("#dateFrom").datepicker("option", "maxDate", selectedDate);
+			var date = selectedDate.split("/");
+			date = { month: date[0], day: date[1], year: date[2]};
+			filter.dateTo = date;
+			communicate();
+		}
+	});
+	$("#slider").slider({
+		range: true,
+		min: 0,
+		max: 24,
+		values: [0, 24],
+		slide: function(event, ui) {
+			$("#hours").val(ui.values[0]+" to "+ui.values[1]);
+		},
+		stop: function(event, ui) {
+			var hours = { from: ui.values[0], to: ui.values[1]};
+			filter.hours = hours;
+			communicate();
+		}
+	});
+	$("#hours").val($("#slider").slider("values", 0)+" to "+$("#slider").slider("values", 1));
 	
 	map.setCenter(lonlat, zoom);
 }
+

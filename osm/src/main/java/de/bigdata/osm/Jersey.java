@@ -93,7 +93,14 @@ public class Jersey {
 
                 double lat = Double.valueOf(feature.getProperty(GdeltFeature.Attributes.ActionGeo_Lat.getName()).getValue().toString());
                 double lon = Double.valueOf(feature.getProperty(GdeltFeature.Attributes.ActionGeo_Long.getName()).getValue().toString());
-                events.addEvent(new Event(lat, lon));
+                int eventCode = Integer.valueOf(feature.getProperty(GdeltFeature.Attributes.EventCode.getName()).getValue().toString());
+                Event event = new Event(lat, lon);
+                event.setEventCode(eventCode);
+                event.setSqlDate(feature.getProperty(GdeltFeature.Attributes.SQLDATE.getName()).getValue().toString());
+                event.setActor1Name(feature.getProperty(GdeltFeature.Attributes.Actor1Name.getName()).getValue().toString());
+                event.setActor2Name(feature.getProperty(GdeltFeature.Attributes.Actor2Name.getName()).getValue().toString());
+                event.setGeoName(feature.getProperty(GdeltFeature.Attributes.ActionGeo_FullName.getName()).getValue().toString());
+                events.addEvent(event);
             }
             System.out.println();
         } finally {
@@ -109,19 +116,18 @@ public class Jersey {
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         List<Filter> filterList = new ArrayList<Filter>();
 
-        // We are going to query for events in Ukraine during the
-        // civil unrest.
-
-        // We'll start by looking at a particular day in February of 2014
         Calendar calendar = Calendar.getInstance();
         calendar.clear();
-        calendar.set(Calendar.YEAR, 2014);
-        calendar.set(Calendar.MONTH, Calendar.FEBRUARY);
-        calendar.set(Calendar.DAY_OF_MONTH, 2);
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.YEAR, events.getDateFrom().getYear());
+        calendar.set(Calendar.MONTH, events.getDateFrom().getMonth()-1);
+        calendar.set(Calendar.DAY_OF_MONTH, events.getDateFrom().getDay());
+        calendar.set(Calendar.HOUR_OF_DAY, events.getHours().getFrom());
         Date start = calendar.getTime();
 
-        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.YEAR, events.getDateTo().getYear());
+        calendar.set(Calendar.MONTH, events.getDateTo().getMonth()-1);
+        calendar.set(Calendar.DAY_OF_MONTH, events.getDateTo().getDay());
+        calendar.set(Calendar.HOUR_OF_DAY, events.getHours().getTo());
         Date end = calendar.getTime();
 
         Filter timeFilter =
