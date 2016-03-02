@@ -89,6 +89,14 @@ function init() {
 	map.addLayer(vectors);
 	map.addLayer(circleLayer);	
 
+	var heatmap = new Heatmap.Layer("Heatmap");
+	// two testing points
+  	heatmap.addSource(new Heatmap.Source(new OpenLayers.LonLat(32.789, 52.690)));
+  	heatmap.addSource(new Heatmap.Source(new OpenLayers.LonLat(33.012, 53.120)));
+
+	map.moveTo(1,1);
+	map.addLayer(heatmap);
+
 	box = new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.RegularPolygon, {
 		handlerOptions: {
 			snapAngle: 90,
