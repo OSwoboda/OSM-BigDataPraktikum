@@ -10,9 +10,6 @@
 			#map { width:100%; height:100%; }
   			div.olControlAttribution { bottom:3px; }
   			div.ui-datepicker { font-size:12px; }
-  			#slider { margin:0.5em; }
-  			.ui-slider { height:0.5em; }
-  			.ui-slider .ui-slider-handle { height:0.5em; width:0.5em; padding:0.2em; }
   			#legend {
 			    position:absolute; 
 			    left:5px;
@@ -21,19 +18,39 @@
 			    background-color:rgba(255,255,255,0.5);
 			    padding:1em;
 			}
-			#hours {
-				border:0;
-				background-color:rgba(255,255,255,0);
+			#eventCont {
+				position:absolute; 
+			    right:5px;
+			    bottom:20px;
+			    height:50%;
+			    width:50%;
+			}
+			#accordion {
+				position:absolute;
+				bottom:0;
+				width:100%;
+				z-index:1000;
+			}
+			.ui-accordion, .ui-accordion-header {
+				font-size:12px;
 			}
 			label.field {
-				float: left;
+				float:left;
 				width: 5em;
 			}
 			form p {
-				clear: both;
+				clear:both;
 			}
 			input.circleSize { width:2em; }
 			.center { text-align:center; }
+			table {
+			    border-collapse:collapse;
+			    width:100%;
+			}
+			table, th, td {
+			   border:1px solid black;
+			   padding:0.25em;
+			}
 		</style>
 		
   		<script src="http://code.jquery.com/jquery-1.11.3.js"></script>
@@ -46,12 +63,8 @@
 			<div id="legend">
 				<p class="center" id="results">Use Ctrl+LeftClick on the map to choose an area of interest.</p><br/>
 				<form>
-					<p><label class="field" for="dateFrom">Date from:</label> <input id="dateFrom" name="dateFrom" value="02/02/2013"></p>
-					<p><label class="field" for="dateTo">Date to:</label> <input id="dateTo" name="dateTo" value="02/02/2014"></p>
-				</form>
-				<p><label class="field" for="hours">Hours:</label> <input type="text" id="hours" readonly></p>
-				<div id="slider"></div><br/>
-				<form>
+					<p><label class="field" for="dateFrom">Date from:</label> <input id="dateFrom" name="dateFrom"></p>
+					<p><label class="field" for="dateTo">Date to:</label> <input id="dateTo" name="dateTo"></p><br/>
 					<p><label class="field" for="events">Events:</label> <input id="events" name="events"></p>
 					<p><label class="field" for="keywords">Keywords:</label> <input id="keywords" name="keywords"> <input id="filter" type="submit" value="Filter"></p>
 				</form>
@@ -59,6 +72,14 @@
 					<p><label class="field" for="circleSize">circleSize:</label> <input class="circleSize" name="circleSize" type="submit" value="-"> <input class="circleSize" name="circleSize" type="submit" value="+"></p>
 				</form>
 			</div>
+			<div id="eventCont">
+				<div id="accordion">
+	  				<h3>Event Info</h3>
+	  				<div id="eventInfo">
+	    				<p>Nothing selected</p>
+	  				</div>
+	  			</div>
+	  		</div>
 		</div>
 	</body>
 </html>

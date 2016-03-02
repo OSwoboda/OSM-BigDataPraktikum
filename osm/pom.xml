@@ -8,11 +8,12 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<geomesa.version>1.1.0-rc.6</geomesa.version>
-        <accumulo.version>1.5.4</accumulo.version>
+		<geomesa.version>1.2.0</geomesa.version>
+        <accumulo.version>1.6.5</accumulo.version>
         <hadoop.version>2.2.0</hadoop.version>
         <gt.version>11.0</gt.version>
-        <jackson.version>1.9.13</jackson.version>
+        <jersey.version>1.19</jersey.version>
+        <jackson.version>2.7.2</jackson.version>
 	</properties>
 
 	<repositories>
@@ -42,12 +43,32 @@
 		<dependency>
 			<groupId>com.sun.jersey</groupId>
 			<artifactId>jersey-servlet</artifactId>
-			<version>1.19</version>
+			<version>${jersey.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sun.jersey</groupId>
 			<artifactId>jersey-json</artifactId>
-			<version>1.19</version>
+			<version>${jersey.version}</version>
+		</dependency>
+		<dependency>
+		  <groupId>com.fasterxml.jackson.core</groupId>
+		  <artifactId>jackson-annotations</artifactId>
+		  <version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+		  <groupId>com.fasterxml.jackson.core</groupId>
+		  <artifactId>jackson-core</artifactId>
+		  <version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.jaxrs</groupId>
+			<artifactId>jackson-jaxrs-json-provider</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+		  <groupId>com.fasterxml.jackson.core</groupId>
+		  <artifactId>jackson-databind</artifactId>
+		  <version>${jackson.version}</version>
 		</dependency>
 		<dependency>
             <groupId>org.locationtech.geomesa</groupId>

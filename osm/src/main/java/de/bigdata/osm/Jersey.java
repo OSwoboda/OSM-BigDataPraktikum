@@ -14,7 +14,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureStore;
@@ -29,13 +28,16 @@ import org.opengis.feature.Property;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vividsolutions.jts.geom.Point;
+
 @Path("/jersey")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Jersey {
 	
 	private Events events;
 	private FeatureStore<?,?> featureStore;
-	private String simpleFeatureTypeName = "gdelt";
+	private String simpleFeatureTypeName = "event";
 	
 	public Jersey() throws IOException {
 		Map<String, String> dsConf = new HashMap<String, String>();
@@ -43,7 +45,7 @@ public class Jersey {
     	dsConf.put("password", "P@ssw0rd");
     	dsConf.put("instanceId", "bigdata");
     	dsConf.put("zookeepers", "localhost:2181");
-    	dsConf.put("tableName", "gdelt_Ukraine");
+    	dsConf.put("tableName", "gdelt");
         dsConf.put("collectStats", "false");
         DataStore dataStore = DataStoreFinder.getDataStore(dsConf);
         assert dataStore != null;
@@ -90,13 +92,12 @@ public class Jersey {
                     }
                 }
                 System.out.println(result.toString());
-
-                double lat = Double.valueOf(feature.getProperty(GdeltFeature.Attributes.ActionGeo_Lat.getName()).getValue().toString());
-                double lon = Double.valueOf(feature.getProperty(GdeltFeature.Attributes.ActionGeo_Long.getName()).getValue().toString());
+                
+                Point geom = (Point)feature.getProperty(GdeltFeature.Attributes.geom.getName()).getValue();
                 int eventCode = Integer.valueOf(feature.getProperty(GdeltFeature.Attributes.EventCode.getName()).getValue().toString());
-                Event event = new Event(lat, lon);
+                Event event = new Event(geom.getY(), geom.getX());
                 event.setEventCode(eventCode);
-                event.setSqlDate(feature.getProperty(GdeltFeature.Attributes.SQLDATE.getName()).getValue().toString());
+                event.setSqlDate((Date)feature.getProperty(GdeltFeature.Attributes.SQLDATE.getName()).getValue());
                 event.setActor1Name(feature.getProperty(GdeltFeature.Attributes.Actor1Name.getName()).getValue().toString());
                 event.setActor2Name(feature.getProperty(GdeltFeature.Attributes.Actor2Name.getName()).getValue().toString());
                 event.setGeoName(feature.getProperty(GdeltFeature.Attributes.ActionGeo_FullName.getName()).getValue().toString());
@@ -115,25 +116,20 @@ public class Jersey {
         // Get a FilterFactory2 to build up our query
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         List<Filter> filterList = new ArrayList<Filter>();
-
         Calendar calendar = Calendar.getInstance();
         calendar.clear();
-        calendar.set(Calendar.YEAR, events.getDateFrom().getYear());
-        calendar.set(Calendar.MONTH, events.getDateFrom().getMonth()-1);
-        calendar.set(Calendar.DAY_OF_MONTH, events.getDateFrom().getDay());
-        calendar.set(Calendar.HOUR_OF_DAY, events.getHours().getFrom());
-        Date start = calendar.getTime();
-
-        calendar.set(Calendar.YEAR, events.getDateTo().getYear());
-        calendar.set(Calendar.MONTH, events.getDateTo().getMonth()-1);
-        calendar.set(Calendar.DAY_OF_MONTH, events.getDateTo().getDay());
-        calendar.set(Calendar.HOUR_OF_DAY, events.getHours().getTo());
-        Date end = calendar.getTime();
-
+        calendar.setTime(events.getDateFrom());
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        Date from = calendar.getTime();
+        
+        calendar.setTime(events.getDateTo());
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        Date to = calendar.getTime();
+        
         Filter timeFilter =
                 ff.between(ff.property(GdeltFeature.Attributes.SQLDATE.getName()),
-                           ff.literal(start),
-                           ff.literal(end));
+                           ff.literal(from),
+                           ff.literal(to));
         filterList.add(timeFilter);
         
         Filter spatialFilter =

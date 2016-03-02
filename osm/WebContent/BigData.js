@@ -11,12 +11,8 @@ var box;
 var transform;
 var map;
 var filter = {
-		dateFrom: {month: 02, day: 02, year: 2013},
-		dateTo: {month: 02, day: 02, year: 2014},
-		hours: {
-			from: 0,
-			to: 24
-		}
+		dateFrom: "01/01/2016",
+		dateTo: "01/01/2016"
 };
 var size = 1;
 
@@ -32,6 +28,7 @@ function endDrag(bbox) {
 }
 
 function communicate() {
+	doUnselect();
 	OpenLayers.Util.getElement("results").innerHTML = "Searching...";
 	$.ajax({
 		method: "POST",
@@ -39,8 +36,10 @@ function communicate() {
 		contentType: "application/json",
 		data: JSON.stringify(filter),
 		dataType: "json",
+		error: function(jqXHR, textStatus, errorThrown) {
+			OpenLayers.Util.getElement("results").innerHTML = textStatus;
+		},
 		success: function(data) {
-			console.log(data);
 			OpenLayers.Util.getElement("results").innerHTML = data.events.length > 0 ? data.events.length+" results" : "No results";
 			var points = {};
 			data.events.forEach(function(event) {
@@ -69,7 +68,6 @@ function communicate() {
 				var featurecircle = new OpenLayers.Feature.Vector(circle, {events:v.events, count:v.count, results:data.events.length});
 				circleLayer.addFeatures(featurecircle);
 			});
-			circleLayer.redraw();
 		}
 	})
 }
@@ -113,10 +111,30 @@ function init() {
 		communicate();
 	});
 	map.addControl(transform);
-	var select = new OpenLayers.Control.SelectFeature([vectors, circleLayer]);
-	select.events.register("featurehighlighted", select, function(event) {
-		console.log(event);
-		console.log(event.feature.attributes);
+	var select = new OpenLayers.Control.SelectFeature([vectors, circleLayer], {
+		onSelect: function(feature) {
+			var events = feature.attributes.events;
+			var table = "<table><tr>";
+			for (var key in events[0]) {
+				table += "<th>"+key+"</th>";
+			}
+			table += "</tr>";
+			$.each(events, function(k, v) {
+				table += "<tr>";
+				for (var key in v) {
+					if (key === "sqlDate") {
+						table += "<td>"+new Date(v[key]).toDateString()+"</td>";
+					} else {
+						table += "<td>"+v[key]+"</td>";
+					}
+				}
+				table += "</tr>";
+			});
+			table += "</table>"
+			OpenLayers.Util.getElement("eventInfo").innerHTML = table;
+			$("#accordion").accordion("option", "active", 0);
+		}, 
+		onUnselect: doUnselect
 	});
 	map.addControl(select);
 	select.activate();
@@ -138,11 +156,12 @@ function init() {
 		circleLayer.features.forEach(function(feature) {
 			feature.geometry.resize(scale, feature.geometry.getCentroid());
 		});
-		circleLayer.redraw()
+		circleLayer.redraw();
 	});
+	$("#dateFrom").val(filter.dateFrom);
 	$("#dateFrom").datepicker({
-	    defaultDate: filter.dateFrom.month+"/"+filter.dateFrom.day+"/"+filter.dateFrom.year,
-	    maxDate: filter.dateTo.month+"/"+filter.dateTo.day+"/"+filter.dateTo.year,
+	    defaultDate: filter.dateFrom,
+	    maxDate: filter.dateTo,
 	    changeMonth: true,
 	    changeYear: true,
 	    showWeek: true,
@@ -150,15 +169,13 @@ function init() {
 	    selectOtherMonths: true,
 	    onClose: function(selectedDate) {
 	    	$("#dateTo").datepicker("option", "minDate", selectedDate);
-	    	var date = selectedDate.split("/");
-			date = { month: date[0], day: date[1], year: date[2]};
-			filter.dateFrom = date;
-			communicate();
+	    	filter.dateFrom = selectedDate;
 	    }
 	});
+	$("#dateTo").val(filter.dateTo);
 	$("#dateTo").datepicker({
-		defaultDate: filter.dateTo.month+"/"+filter.dateTo.day+"/"+filter.dateTo.year,
-	    minDate: filter.dateFrom.month+"/"+filter.dateFrom.day+"/"+filter.dateFrom.year,
+		defaultDate: filter.dateTo,
+	    minDate: filter.dateFrom,
 		changeMonth: true,
 		changeYear: true,
 		showWeek: true,
@@ -166,28 +183,20 @@ function init() {
 	    selectOtherMonths: true,
 		onClose: function(selectedDate) {
 			$("#dateFrom").datepicker("option", "maxDate", selectedDate);
-			var date = selectedDate.split("/");
-			date = { month: date[0], day: date[1], year: date[2]};
-			filter.dateTo = date;
-			communicate();
+			filter.dateTo = selectedDate;
 		}
 	});
-	$("#slider").slider({
-		range: true,
-		min: 0,
-		max: 24,
-		values: [0, 24],
-		slide: function(event, ui) {
-			$("#hours").val(ui.values[0]+" to "+ui.values[1]);
-		},
-		stop: function(event, ui) {
-			var hours = { from: ui.values[0], to: ui.values[1]};
-			filter.hours = hours;
-			communicate();
-		}
+	$("#accordion").accordion({
+		collapsible: true,
+		active: false,
+		heightStyle: "fill"
 	});
-	$("#hours").val($("#slider").slider("values", 0)+" to "+$("#slider").slider("values", 1));
 	
 	map.setCenter(lonlat, zoom);
+}
+
+function doUnselect() {
+	OpenLayers.Util.getElement("eventInfo").innerHTML = "<p>Nothing selected</p>"
+	$("#accordion").accordion("option", "active", false);
 }
 

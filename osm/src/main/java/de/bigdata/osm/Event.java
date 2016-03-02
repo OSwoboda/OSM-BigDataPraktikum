@@ -1,12 +1,14 @@
 package de.bigdata.osm;
 
+import java.util.Date;
+
 public class Event {
 	
 	private double lat;
 	private double lon;
 	private int eventCode;
 	
-	private String sqlDate;
+	private Date sqlDate;
 	private String actor1Name;
 	private String actor2Name;
 	private String geoName;
@@ -37,10 +39,10 @@ public class Event {
 		this.eventCode = eventCode;
 	}
 
-	public String getSqlDate() {
+	public Date getSqlDate() {
 		return sqlDate;
 	}
-	public void setSqlDate(String sqlDate) {
+	public void setSqlDate(Date sqlDate) {
 		this.sqlDate = sqlDate;
 	}
 

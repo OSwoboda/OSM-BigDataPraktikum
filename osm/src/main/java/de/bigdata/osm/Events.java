@@ -1,17 +1,20 @@
 package de.bigdata.osm;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Events {
 
 	private Bounds bounds;
+	@JsonFormat(shape=JsonFormat.Shape.STRING, pattern="MM/dd/yyyy")
 	private Date dateFrom;
+	@JsonFormat(shape=JsonFormat.Shape.STRING, pattern="MM/dd/yyyy")
 	private Date dateTo;
-	private Hours hours;
 	
 	private List<Event> events = new ArrayList<Event>();
 	private List<Integer> eventIDs = new ArrayList<Integer>();
@@ -39,13 +42,6 @@ public class Events {
 	}
 	public void setDateTo(Date dateTo) {
 		this.dateTo = dateTo;
-	}
-
-	public Hours getHours() {
-		return hours;
-	}
-	public void setHours(Hours hours) {
-		this.hours = hours;
 	}
 
 	public List<Event> getEvents() {
