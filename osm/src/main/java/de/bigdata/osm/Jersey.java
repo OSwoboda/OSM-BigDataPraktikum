@@ -72,11 +72,11 @@ public class Jersey {
         // loop through all results
         FeatureIterator<?> iterator = results.features();
         try {
-            if (iterator.hasNext()) {
+            /*if (iterator.hasNext()) {
                 System.out.println("Results:");
             } else {
                 System.out.println("No results");
-            }
+            }*/
             int n = 0;
             while (iterator.hasNext()) {
                 Feature feature = iterator.next();
@@ -91,16 +91,19 @@ public class Jersey {
                         // GEOMESA-280 - currently asking for non-existing properties throws an NPE
                     }
                 }
-                System.out.println(result.toString());
+                //System.out.println(result.toString());
                 
                 Point geom = (Point)feature.getProperty(GdeltFeature.Attributes.geom.getName()).getValue();
-                int eventCode = Integer.valueOf(feature.getProperty(GdeltFeature.Attributes.EventCode.getName()).getValue().toString());
                 Event event = new Event(geom.getY(), geom.getX());
-                event.setEventCode(eventCode);
+                event.setEventCode(feature.getProperty(GdeltFeature.Attributes.EventCode.getName()).getValue().toString());
                 event.setSqlDate((Date)feature.getProperty(GdeltFeature.Attributes.SQLDATE.getName()).getValue());
                 event.setActor1Name(feature.getProperty(GdeltFeature.Attributes.Actor1Name.getName()).getValue().toString());
                 event.setActor2Name(feature.getProperty(GdeltFeature.Attributes.Actor2Name.getName()).getValue().toString());
                 event.setGeoName(feature.getProperty(GdeltFeature.Attributes.ActionGeo_FullName.getName()).getValue().toString());
+                Object sourceURL = feature.getProperty(GdeltFeature.Attributes.SOURCEURL.getName()).getValue();
+                if (sourceURL != null) {
+                	event.setSourceURL(sourceURL.toString());
+                }
                 events.addEvent(event);
             }
             System.out.println();
@@ -142,7 +145,7 @@ public class Jersey {
         filterList.add(spatialFilter);
 
         List<Filter> eventsFilter = new ArrayList<Filter>();
-        for (int eventID : events.getEventIDs()) {
+        for (String eventID : events.getEventIDs()) {
         	eventsFilter.add(ff.like(ff.property(GdeltFeature.Attributes.EventCode.getName()), eventID+"%"));
         }
         if (!eventsFilter.isEmpty()) {

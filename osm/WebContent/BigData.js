@@ -14,9 +14,10 @@ var filter = {
 		dateFrom: "01/01/2016",
 		dateTo: "01/01/2016"
 };
-var size = 1;
+var size = 1, maxRadius, minRadius;
 
-function endDrag(bbox) {	
+function endDrag(bbox) {
+	calcMinMaxRadius(bbox);
 	vectors.removeAllFeatures();
 	transform.unsetFeature();
 	filter.bounds = bbox.getBounds();
@@ -57,10 +58,12 @@ function communicate() {
 						new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
 						new OpenLayers.Projection("EPSG:900913") // to Spherical Mercator
 				);
+				var radius = v.count*1000*size;
+				radius = radius > maxRadius ? maxRadius : radius < minRadius ? minRadius : radius;				
 				var circle = OpenLayers.Geometry.Polygon.createRegularPolygon
 				(
 						new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat),
-						v.count*1000*size,
+						radius,
 						40,
 						0
 				);
@@ -70,6 +73,13 @@ function communicate() {
 			});
 		}
 	})
+}
+
+function calcMinMaxRadius(geometry) {
+	var area = geometry.getArea();
+	var radius = Math.sqrt(area/Math.PI);
+	maxRadius = radius*size/4;
+	minRadius = radius*size/40;
 }
 
 function init() {
@@ -106,6 +116,7 @@ function init() {
 		irregular: true
 	});
 	transform.events.register("transformcomplete", transform, function(event) {
+		calcMinMaxRadius(event.feature.geometry);
 		filter.bounds = new OpenLayers.Bounds(event.feature.geometry.bounds.toArray());
 		filter.bounds.transform("EPSG:900913", "EPSG:4326");
 		communicate();
@@ -122,11 +133,16 @@ function init() {
 			$.each(events, function(k, v) {
 				table += "<tr>";
 				for (var key in v) {
-					if (key === "sqlDate") {
+					switch(key) {
+					case "sqlDate":
 						table += "<td>"+new Date(v[key]).toDateString()+"</td>";
-					} else {
+						break;
+					case "sourceURL":
+						table += "<td><a href="+v[key]+" target='_blank'>Source</a></td>";
+						break;
+					default:
 						table += "<td>"+v[key]+"</td>";
-					}
+					}					
 				}
 				table += "</tr>";
 			});

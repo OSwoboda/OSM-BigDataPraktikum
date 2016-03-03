@@ -2,16 +2,23 @@ package de.bigdata.osm;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(Include.NON_NULL)
 public class Event {
 	
 	private double lat;
 	private double lon;
-	private int eventCode;
+	private String eventCode;
 	
 	private Date sqlDate;
 	private String actor1Name;
 	private String actor2Name;
 	private String geoName;
+	private String sourceURL;
 	
 	public Event(double lat, double lon) {
 		this.lat = lat;
@@ -32,10 +39,10 @@ public class Event {
 		this.lon = lon;
 	}
 
-	public int getEventCode() {
+	public String getEventCode() {
 		return eventCode;
 	}
-	public void setEventCode(int eventCode) {
+	public void setEventCode(String eventCode) {
 		this.eventCode = eventCode;
 	}
 
@@ -65,5 +72,12 @@ public class Event {
 	}
 	public void setGeoName(String geoName) {
 		this.geoName = geoName;
+	}
+
+	public String getSourceURL() {
+		return sourceURL;
+	}
+	public void setSourceURL(String sourceURL) {
+		this.sourceURL = sourceURL;
 	}
 }
