@@ -7,6 +7,7 @@ var circleLayer = new OpenLayers.Layer.Vector("Circles", {
 	}),
 	rendererOptions: {zIndexing: true}
 });
+var heatmap = new Heatmap.Layer("Heatmap", {visibility: false});
 var box;
 var transform;
 var map;
@@ -14,9 +15,10 @@ var filter = {
 		dateFrom: "01/01/2016",
 		dateTo: "01/01/2016"
 };
-var size = 1;
+var size = 1, maxRadius, minRadius;
 
-function endDrag(bbox) {	
+function endDrag(bbox) {
+	calcMinMaxRadius(bbox);
 	vectors.removeAllFeatures();
 	transform.unsetFeature();
 	filter.bounds = bbox.getBounds();
@@ -42,7 +44,12 @@ function communicate() {
 		success: function(data) {
 			OpenLayers.Util.getElement("results").innerHTML = data.events.length > 0 ? data.events.length+" results" : "No results";
 			var points = {};
+			heatmap.removeAllSources();
 			data.events.forEach(function(event) {
+				heatmap.addSource(new Heatmap.Source(new OpenLayers.LonLat(event.lon, event.lat).transform(
+						new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
+						new OpenLayers.Projection("EPSG:900913") // to Spherical Mercator
+				)));
 				var key = event.lat+"&"+event.lon;
 				if (points.hasOwnProperty(key)) {
 					points[key].count += 1;
@@ -51,16 +58,18 @@ function communicate() {
 					points[key] = {count:1, lat:event.lat, lon:event.lon, events:[event]};
 				}
 			});
+			heatmap.redraw();
 			circleLayer.removeAllFeatures();
 			$.each(points, function(k, v) {				
 				var lonlat = new OpenLayers.LonLat(v.lon, v.lat).transform(
 						new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
 						new OpenLayers.Projection("EPSG:900913") // to Spherical Mercator
 				);
+				var radius = Math.max(minRadius, Math.min(maxRadius, v.count*1000*size));			
 				var circle = OpenLayers.Geometry.Polygon.createRegularPolygon
 				(
 						new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat),
-						v.count*1000*size,
+						radius,
 						40,
 						0
 				);
@@ -72,9 +81,17 @@ function communicate() {
 	})
 }
 
+function calcMinMaxRadius(geometry) {
+	var area = geometry.getArea();
+	var radius = Math.sqrt(area/Math.PI);
+	maxRadius = radius*size/4;
+	minRadius = radius*size/40;
+}
+
 function init() {
 	map = new OpenLayers.Map("map");
 	map.addLayer(new OpenLayers.Layer.OSM());
+	map.addControl(new OpenLayers.Control.LayerSwitcher());
 
 	var lonlat = new OpenLayers.LonLat(10.45415, 51.164181).transform(
 			new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
@@ -87,14 +104,7 @@ function init() {
 		displayInLayerSwitcher: false
 	});
 	map.addLayer(vectors);
-	map.addLayer(circleLayer);	
-
-	var heatmap = new Heatmap.Layer("Heatmap");
-	// two testing points
-  	heatmap.addSource(new Heatmap.Source(new OpenLayers.LonLat(32.789, 52.690)));
-  	heatmap.addSource(new Heatmap.Source(new OpenLayers.LonLat(33.012, 53.120)));
-
-	map.moveTo(1,1);
+	map.addLayer(circleLayer);
 	map.addLayer(heatmap);
 
 	box = new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.RegularPolygon, {
@@ -114,6 +124,7 @@ function init() {
 		irregular: true
 	});
 	transform.events.register("transformcomplete", transform, function(event) {
+		calcMinMaxRadius(event.feature.geometry);
 		filter.bounds = new OpenLayers.Bounds(event.feature.geometry.bounds.toArray());
 		filter.bounds.transform("EPSG:900913", "EPSG:4326");
 		communicate();
@@ -130,11 +141,16 @@ function init() {
 			$.each(events, function(k, v) {
 				table += "<tr>";
 				for (var key in v) {
-					if (key === "sqlDate") {
+					switch(key) {
+					case "sqlDate":
 						table += "<td>"+new Date(v[key]).toDateString()+"</td>";
-					} else {
+						break;
+					case "sourceURL":
+						table += "<td><a href="+v[key]+" target='_blank'>Source</a></td>";
+						break;
+					default:
 						table += "<td>"+v[key]+"</td>";
-					}
+					}					
 				}
 				table += "</tr>";
 			});

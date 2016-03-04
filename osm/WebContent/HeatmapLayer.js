@@ -189,6 +189,10 @@ Heatmap.Layer = OpenLayers.Class(OpenLayers.Layer, {
       OpenLayers.Util.removeItem(this.points, source);
     }
   },
+  
+  removeAllSources: function() {
+	  this.points = [];
+  },
 
   /** 
    * Method: moveTo
