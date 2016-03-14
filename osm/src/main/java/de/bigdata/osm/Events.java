@@ -17,7 +17,7 @@ public class Events {
 	private Date dateTo;
 	
 	private List<Event> events = new ArrayList<Event>();
-	private List<Integer> eventIDs = new ArrayList<Integer>();
+	private List<String> eventIDs = new ArrayList<String>();
 	private List<String> keywords = new ArrayList<String>();
 
 	public Events() {
@@ -54,10 +54,10 @@ public class Events {
 		events.add(event);
 	}	
 	
-	public List<Integer> getEventIDs() {
+	public List<String> getEventIDs() {
 		return eventIDs;
 	}
-	public void setEventIDs(List<Integer> eventIDs) {
+	public void setEventIDs(List<String> eventIDs) {
 		this.eventIDs = eventIDs;
 	}
 

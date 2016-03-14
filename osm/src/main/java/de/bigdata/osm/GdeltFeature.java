@@ -84,7 +84,8 @@ public class GdeltFeature {
         ActionGeo_Long("Float"),
         ActionGeo_FeatureID("Integer"),
         DATEADDED("Integer"),
-        geom("Point");
+        geom("Point"),
+        SOURCEURL("String");
 
         private String type;
 
