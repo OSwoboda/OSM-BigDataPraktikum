@@ -6,7 +6,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+/**
+ * Containerklasse fuer ein einzelnes Event
+ * @author Oliver Swoboda
+ *
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
+// Damit die SourceURL nicht als Key in das JSON-Objekt geschrieben wird, wenn sie NULL ist
 @JsonInclude(Include.NON_NULL)
 public class Event {
 	

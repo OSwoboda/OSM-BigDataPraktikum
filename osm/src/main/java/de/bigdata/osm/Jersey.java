@@ -31,14 +31,24 @@ import org.opengis.filter.FilterFactory2;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vividsolutions.jts.geom.Point;
 
+/**
+ * Klasse zur Kommunikation mit dem Javascript Frontend
+ * @author Oliver Swoboda
+ *
+ */
 @Path("/jersey")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Jersey {
 	
 	private Events events;
 	private FeatureStore<?,?> featureStore;
+	// FeatureTypeName, der beim Ingest angegeben wurde
 	private String simpleFeatureTypeName = "event";
 	
+	/**
+	 * Herstellung der Verbindung zur Datenbank im Konstruktor
+	 * @throws IOException
+	 */
 	public Jersey() throws IOException {
 		Map<String, String> dsConf = new HashMap<String, String>();
     	dsConf.put("user", "root");
@@ -50,26 +60,26 @@ public class Jersey {
         DataStore dataStore = DataStoreFinder.getDataStore(dsConf);
         assert dataStore != null;
 
-        // get the feature store used to query the GeoMesa data
+        // FeatureStore um Queries auf den Geomesa Daten ausfuehren zu koennen
         featureStore = (AccumuloFeatureStore) dataStore.getFeatureSource(simpleFeatureTypeName);
 	}
   
+	/**
+	 * Abfrage der vom Frontend angeforderten Daten aus der Datenbank
+	 * @param events Vom Frontend übergebenes Objekt mit den ausgewaehlten Koordinaten und Filtern
+	 * @return {@link Events} mit den aus der Datenbank erhaltenen Daten
+	 * @throws IOException
+	 * @throws CQLException
+	 */
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Events getBounds(Events events) throws IOException, CQLException {
+	public Events getEvents(Events events) throws IOException, CQLException {
 		this.events = events;		
         
-		// start with our basic filter to narrow the results
         Filter cqlFilter = createBaseFilter();
-
-        // use the 2-arg constructor for the query - this will not restrict the attributes returned
         Query query = new Query(simpleFeatureTypeName, cqlFilter);
-
-        // execute the query
         FeatureCollection<?,?> results = featureStore.getFeatures(query);
-
-        // loop through all results
         FeatureIterator<?> iterator = results.features();
         try {
             /*if (iterator.hasNext()) {
@@ -106,7 +116,7 @@ public class Jersey {
                 }
                 events.addEvent(event);
             }
-            System.out.println();
+            //System.out.println();
         } finally {
             iterator.close();
         }
@@ -114,9 +124,14 @@ public class Jersey {
 		return events;
 	}
 	
+	/**
+	 * Erstellen eines Filters zum Einschraenken der Ergebnisse
+	 * @return Filter zur Einschraenkung der Ergebnisse
+	 * @throws CQLException
+	 * @throws IOException
+	 */
 	private Filter createBaseFilter() throws CQLException, IOException {
 
-        // Get a FilterFactory2 to build up our query
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         List<Filter> filterList = new ArrayList<Filter>();
         Calendar calendar = Calendar.getInstance();
@@ -129,12 +144,14 @@ public class Jersey {
         calendar.set(Calendar.HOUR_OF_DAY, 23);
         Date to = calendar.getTime();
         
+        // Einschraenkung des Zeitintervalls
         Filter timeFilter =
                 ff.between(ff.property(GdeltFeature.Attributes.SQLDATE.getName()),
                            ff.literal(from),
                            ff.literal(to));
         filterList.add(timeFilter);
         
+        // Einschraenkung der Koordinaten
         Filter spatialFilter =
                 ff.bbox(GdeltFeature.Attributes.geom.getName(),
                         events.getBounds().getLeft(),
@@ -143,16 +160,20 @@ public class Jersey {
                         events.getBounds().getTop(),
                         "EPSG:4326");
         filterList.add(spatialFilter);
-
+        
+        // Einschraenken der EventCodes mit einem LIKE-Filter, z.B. LIKE 19% um EventCodes wie 190, 191 usw. zu erhalten
         List<Filter> eventsFilter = new ArrayList<Filter>();
         for (String eventID : events.getEventIDs()) {
         	eventsFilter.add(ff.like(ff.property(GdeltFeature.Attributes.EventCode.getName()), eventID+"%"));
         }
+        // Verknuepfen mehrerer EventCode-Filter mit OR
         if (!eventsFilter.isEmpty()) {
         	Filter orEvents = ff.or(eventsFilter);
         	filterList.add(orEvents);
         }
         
+        // Einschraenken der Ergebnisse mit Keywords, die in den ActorNames gesucht werden
+        // Verknuepfen der Spalten mit OR
         List<Filter> keywordsFilter = new ArrayList<Filter>();
         for (String keyword : events.getKeywords()) {
         	List<Filter> columnFilter = new ArrayList<Filter>();
@@ -160,17 +181,23 @@ public class Jersey {
         	columnFilter.add(ff.like(ff.property(GdeltFeature.Attributes.Actor2Name.getName()), "%"+keyword+"%"));
         	keywordsFilter.add(ff.or(columnFilter));
         }
+        // Verknuepfen mehrerer Keyword-Filter mit OR
         if (!keywordsFilter.isEmpty()) {
         	Filter orKeywords = ff.or(keywordsFilter);
         	filterList.add(orKeywords);
         }
         
-        // Now we can combine our filters using a boolean AND operator
+        // Verknuepfen aller erstellten Filter mit AND
         Filter conjunction = ff.and(filterList);
 
         return conjunction;
     }
 	
+	/**
+	 * Zusammenfuehren der Ergebnisse fuer die Konsolenausgabe
+	 * @param string Ergebnisse als String
+	 * @param property Ergebnis, was dem String hinzugefuegt werden soll
+	 */
 	private void appendResult(StringBuilder string, Property property) {
         if (property != null) {
             string.append("|")

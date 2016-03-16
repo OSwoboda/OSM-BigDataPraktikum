@@ -2,6 +2,11 @@ package de.bigdata.osm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Containerklasse fuer den Koordinatenbereich der Events
+ * @author Oliver Swoboda
+ *
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Bounds {
 	

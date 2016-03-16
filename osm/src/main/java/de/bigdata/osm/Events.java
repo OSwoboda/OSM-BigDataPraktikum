@@ -7,10 +7,16 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Containerklasse fuer die Eventdaten
+ * @author Oliver Swoboda
+ *
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Events {
 
 	private Bounds bounds;
+	// Angabe des Datumsformates fuer die richtige Umwandlung von JSON zu Date
 	@JsonFormat(shape=JsonFormat.Shape.STRING, pattern="MM/dd/yyyy")
 	private Date dateFrom;
 	@JsonFormat(shape=JsonFormat.Shape.STRING, pattern="MM/dd/yyyy")
