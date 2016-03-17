@@ -7,6 +7,7 @@ var circleLayer = new OpenLayers.Layer.Vector("Circles", {
 	}),
 	rendererOptions: {zIndexing: true}
 });
+var heatmap = new Heatmap.Layer("Heatmap", {visibility: false});
 var box;
 var transform;
 var map;
@@ -43,7 +44,12 @@ function communicate() {
 		success: function(data) {
 			OpenLayers.Util.getElement("results").innerHTML = data.events.length > 0 ? data.events.length+" results" : "No results";
 			var points = {};
+			heatmap.removeAllSources();
 			data.events.forEach(function(event) {
+				heatmap.addSource(new Heatmap.Source(new OpenLayers.LonLat(event.lon, event.lat).transform(
+						new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
+						new OpenLayers.Projection("EPSG:900913") // to Spherical Mercator
+				)));
 				var key = event.lat+"&"+event.lon;
 				if (points.hasOwnProperty(key)) {
 					points[key].count += 1;
@@ -52,14 +58,15 @@ function communicate() {
 					points[key] = {count:1, lat:event.lat, lon:event.lon, events:[event]};
 				}
 			});
+			heatmap.redraw();
 			circleLayer.removeAllFeatures();
 			$.each(points, function(k, v) {				
 				var lonlat = new OpenLayers.LonLat(v.lon, v.lat).transform(
 						new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
 						new OpenLayers.Projection("EPSG:900913") // to Spherical Mercator
 				);
-				var radius = v.count*1000*size;
-				radius = radius > maxRadius ? maxRadius : radius < minRadius ? minRadius : radius;				
+
+				var radius = Math.max(minRadius, Math.min(maxRadius, v.count*1000*size));			
 				var circle = OpenLayers.Geometry.Polygon.createRegularPolygon
 				(
 						new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat),
@@ -85,6 +92,7 @@ function calcMinMaxRadius(geometry) {
 function init() {
 	map = new OpenLayers.Map("map");
 	map.addLayer(new OpenLayers.Layer.OSM());
+	map.addControl(new OpenLayers.Control.LayerSwitcher());
 
 	var lonlat = new OpenLayers.LonLat(10.45415, 51.164181).transform(
 			new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
@@ -97,7 +105,8 @@ function init() {
 		displayInLayerSwitcher: false
 	});
 	map.addLayer(vectors);
-	map.addLayer(circleLayer);	
+	map.addLayer(circleLayer);
+	map.addLayer(heatmap);
 
 	box = new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.RegularPolygon, {
 		handlerOptions: {
